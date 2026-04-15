@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gold Rush Idle</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f5f4ef;
+    --color-background-tertiary: #eceae3;
+    --color-text-primary: #1a1a18;
+    --color-text-secondary: #6b6a65;
+    --color-border-tertiary: rgba(0,0,0,0.12);
+    --color-border-secondary: rgba(0,0,0,0.22);
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --border-radius-xl: 16px;
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-background-primary: #1c1c1a;
+      --color-background-secondary: #252523;
+      --color-background-tertiary: #2e2e2b;
+      --color-text-primary: #f0ede4;
+      --color-text-secondary: #9e9b93;
+      --color-border-tertiary: rgba(255,255,255,0.10);
+      --color-border-secondary: rgba(255,255,255,0.20);
+    }
+  }
+  body { font-family: var(--font-sans); background: var(--color-background-tertiary); min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 16px; }
+  #game { max-width: 420px; width: 100%; user-select: none; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .nav { display: flex; gap: 4px; margin-bottom: 10px; flex-wrap: wrap; }
+  .nav-btn { flex: 1; min-width: 60px; padding: 7px 4px; font-size: 11px; font-weight: 500; border: 0.5px solid var(--color-border-secondary); background: var(--color-background-secondary); color: var(--color-text-secondary); border-radius: var(--border-radius-md); cursor: pointer; transition: all .15s; }
+  .nav-btn.active { background: #B8860B; color: #fff; border-color: #B8860B; }
+  .top-bar { background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 10px 14px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+  .gold-display { font-size: 22px; font-weight: 500; color: #B8860B; }
+  .gps { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }
+  .prestige-badge { font-size: 11px; background: #6B21A8; color: #E9D5FF; padding: 3px 8px; border-radius: 12px; }
+  .mine-btn { width: 100%; padding: 22px; font-size: 20px; font-weight: 500; background: linear-gradient(135deg, #B8860B, #DAA520); color: #fff; border: none; border-radius: var(--border-radius-lg); cursor: pointer; position: relative; overflow: hidden; margin-bottom: 8px; transition: transform .08s; }
+  .mine-btn:active { transform: scale(0.96); }
+  .mine-btn .sub { font-size: 12px; font-weight: 400; opacity: .85; margin-top: 3px; }
+  .x3-btn { width: 100%; padding: 10px; font-size: 13px; font-weight: 500; background: var(--color-background-secondary); border: 0.5px solid #DAA520; color: #B8860B; border-radius: var(--border-radius-md); cursor: pointer; margin-bottom: 8px; }
+  .progress-wrap { background: var(--color-background-secondary); border-radius: 8px; height: 10px; overflow: hidden; margin-bottom: 12px; border: 0.5px solid var(--color-border-tertiary); }
+  .progress-bar { height: 100%; background: linear-gradient(90deg, #B8860B, #FFD700); transition: width .3s; border-radius: 8px; }
+  .float-text { position: fixed; pointer-events: none; font-weight: 500; color: #B8860B; font-size: 16px; animation: floatUp .9s ease forwards; z-index: 999; }
+  @keyframes floatUp { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-60px) scale(1.3)} }
+  .section-title { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 8px; text-transform: uppercase; letter-spacing: .05em; }
+  .upgrade-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 10px 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+  .upgrade-icon { font-size: 24px; width: 40px; text-align: center; }
+  .upgrade-info { flex: 1; }
+  .upgrade-name { font-size: 14px; font-weight: 500; color: var(--color-text-primary); }
+  .upgrade-stat { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }
+  .upgrade-lvl { font-size: 11px; color: #B8860B; margin-top: 1px; }
+  .buy-btn { padding: 7px 12px; border-radius: var(--border-radius-md); font-size: 12px; font-weight: 500; cursor: pointer; border: none; white-space: nowrap; }
+  .buy-btn.can { background: #B8860B; color: #fff; }
+  .buy-btn.cant { background: var(--color-background-secondary); color: var(--color-text-secondary); border: 0.5px solid var(--color-border-tertiary); }
+  .chest-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+  .chest-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 16px 12px; text-align: center; cursor: pointer; transition: transform .1s; }
+  .chest-card:active { transform: scale(0.97); }
+  .chest-icon { font-size: 36px; margin-bottom: 8px; }
+  .chest-label { font-size: 13px; font-weight: 500; color: var(--color-text-primary); }
+  .chest-sub { font-size: 11px; color: var(--color-text-secondary); margin-top: 4px; }
+  .rarity-list { font-size: 11px; color: var(--color-text-secondary); line-height: 1.8; }
+  .r-common { color: #888; } .r-rare { color: #3B82F6; } .r-epic { color: #8B5CF6; } .r-leg { color: #F59E0B; }
+  .reward-popup { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .reward-box { background: var(--color-background-primary); border-radius: var(--border-radius-lg); padding: 24px; text-align: center; min-width: 240px; border: 0.5px solid var(--color-border-secondary); }
+  .reward-title { font-size: 18px; font-weight: 500; margin-bottom: 8px; color: var(--color-text-primary); }
+  .reward-desc { font-size: 14px; color: var(--color-text-secondary); margin-bottom: 16px; }
+  .close-btn { padding: 8px 24px; background: #B8860B; color: #fff; border: none; border-radius: var(--border-radius-md); font-size: 14px; cursor: pointer; }
+  .shop-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 12px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .shop-featured { border-color: #B8860B; border-width: 1.5px; }
+  .shop-info .name { font-size: 14px; font-weight: 500; color: var(--color-text-primary); }
+  .shop-info .perks { font-size: 12px; color: var(--color-text-secondary); margin-top: 3px; }
+  .shop-info .timer { font-size: 11px; color: #EF4444; margin-top: 2px; }
+  .price-btn { padding: 8px 14px; background: #16A34A; color: #fff; border: none; border-radius: var(--border-radius-md); font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+  .prestige-hero { text-align: center; padding: 16px; background: var(--color-background-secondary); border-radius: var(--border-radius-lg); margin-bottom: 12px; border: 0.5px solid var(--color-border-tertiary); }
+  .prestige-mult { font-size: 36px; font-weight: 500; color: #8B5CF6; }
+  .prestige-label { font-size: 13px; color: var(--color-text-secondary); margin-top: 4px; }
+  .leaderboard { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); overflow: hidden; }
+  .lb-row { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-bottom: 0.5px solid var(--color-border-tertiary); font-size: 13px; color: var(--color-text-primary); }
+  .lb-row:last-child { border-bottom: none; }
+  .lb-rank { font-weight: 500; width: 24px; color: var(--color-text-secondary); }
+  .lb-name { flex: 1; }
+  .lb-gold { color: #B8860B; font-weight: 500; }
+  .lb-title { font-size: 10px; color: var(--color-text-secondary); }
+  .stat-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .stat-card { flex: 1; background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 8px 10px; text-align: center; }
+  .stat-val { font-size: 16px; font-weight: 500; color: var(--color-text-primary); }
+  .stat-lbl { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; }
+  .offline-banner { background: #78350F; color: #FDE68A; padding: 10px 14px; border-radius: var(--border-radius-md); margin-bottom: 10px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+  .claim-btn { background: #DAA520; color: #1C1C00; padding: 5px 12px; border-radius: 6px; border: none; font-size: 12px; font-weight: 500; cursor: pointer; }
+</style>
+</head>
+<body>
+<div id="game">
+  <div class="nav">
+    <button class="nav-btn active" onclick="showScreen('main',this)">⛏ Mine</button>
+    <button class="nav-btn" onclick="showScreen('upgrades',this)">🔧 Upgrades</button>
+    <button class="nav-btn" onclick="showScreen('chests',this)">📦 Coffres</button>
+    <button class="nav-btn" onclick="showScreen('shop',this)">🛒 Shop</button>
+    <button class="nav-btn" onclick="showScreen('prestige',this)">✨ Prestige</button>
+  </div>
+
+  <div class="top-bar">
+    <div>
+      <div class="gold-display" id="goldDisplay">0 🪙</div>
+      <div class="gps" id="gpsDisplay">0 or/sec</div>
+    </div>
+    <div>
+      <div class="prestige-badge" id="prestigeBadge">Prestige x1.0</div>
+      <div style="font-size:11px;color:var(--color-text-secondary);margin-top:4px;text-align:right;" id="titleDisplay">Beginner</div>
+    </div>
+  </div>
+
+  <div id="offlineBanner" class="offline-banner" style="display:none;">
+    <span id="offlineText">Tu as gagné 0 or hors ligne !</span>
+    <button class="claim-btn" id="offlineClaimBtn">Récupérer</button>
+  </div>
+
+  <!-- MAIN -->
+  <div id="screen-main" class="screen active">
+    <button class="mine-btn" id="mineBtn" onclick="doMine(event)">
+      ⛏ MINER !
+      <div class="sub" id="clickValue">+1 or par clic</div>
+    </button>
+    <button class="x3-btn" id="x3Btn" onclick="watchAd('x3')">📺 x3 gains pendant 30s (pub)</button>
+    <div class="progress-wrap"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
+    <div class="stat-row">
+      <div class="stat-card"><div class="stat-val" id="totalClicks">0</div><div class="stat-lbl">Clics total</div></div>
+      <div class="stat-card"><div class="stat-val" id="totalGold">0</div><div class="stat-lbl">Or total gagné</div></div>
+      <div class="stat-card"><div class="stat-val" id="prestigeCount">0</div><div class="stat-lbl">Prestiges</div></div>
+    </div>
+    <div class="section-title">Machines actives</div>
+    <div id="machineStatus"></div>
+  </div>
+
+  <!-- UPGRADES -->
+  <div id="screen-upgrades" class="screen">
+    <div class="section-title">Améliorations</div>
+    <div id="upgradeList"></div>
+  </div>
+
+  <!-- CHESTS -->
+  <div id="screen-chests" class="screen">
+    <div class="section-title">Coffres</div>
+    <div class="chest-grid">
+      <div class="chest-card" onclick="openChest('free')">
+        <div class="chest-icon">📦</div>
+        <div class="chest-label">Coffre Gratuit</div>
+        <div class="chest-sub">Pub requise</div>
+        <div class="rarity-list" style="margin-top:6px;">
+          <span class="r-common">Commun 60%</span><br>
+          <span class="r-rare">Rare 30%</span><br>
+          <span class="r-epic">Épique 9%</span><br>
+          <span class="r-leg">Légendaire 1%</span>
+        </div>
+      </div>
+      <div class="chest-card" onclick="openChest('premium')" style="border-color:#F59E0B;border-width:1.5px;">
+        <div class="chest-icon">👑</div>
+        <div class="chest-label">Coffre Premium</div>
+        <div class="chest-sub" style="color:#F59E0B;">4,99€</div>
+        <div class="rarity-list" style="margin-top:6px;">
+          <span class="r-common">Commun 20%</span><br>
+          <span class="r-rare">Rare 45%</span><br>
+          <span class="r-epic">Épique 30%</span><br>
+          <span class="r-leg">Légendaire 5%</span>
+        </div>
+      </div>
+    </div>
+    <div class="section-title">Dernière récompense</div>
+    <div id="lastReward" style="font-size:13px;color:var(--color-text-secondary);padding:8px 0;">Aucun coffre ouvert</div>
+  </div>
+
+  <!-- SHOP -->
+  <div id="screen-shop" class="screen">
+    <div class="section-title">Boutique</div>
+    <div id="shopList"></div>
+  </div>
+
+  <!-- PRESTIGE -->
+  <div id="screen-prestige" class="screen">
+    <div class="prestige-hero">
+      <div class="prestige-mult" id="nextMult">+50%</div>
+      <div class="prestige-label">Multiplicateur permanent si vous prestigez</div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-card"><div class="stat-val" id="prestMult">x1.0</div><div class="stat-lbl">Mult. actuel</div></div>
+      <div class="stat-card"><div class="stat-val" id="prestCount2">0</div><div class="stat-lbl">Prestiges</div></div>
+    </div>
+    <p style="font-size:13px;color:var(--color-text-secondary);margin:10px 0 16px;">Le prestige remet à zéro toute votre progression mais vous donne un multiplicateur permanent de gains. Plus vous prestigez, plus vos futurs runs seront rapides !</p>
+    <button class="mine-btn" onclick="doPrestige()" id="prestigeBtn" style="background:linear-gradient(135deg,#6B21A8,#8B5CF6);">
+      ✨ PRESTIGE !
+      <div class="sub" id="prestigeCost">Requis : 1 000 000 or</div>
+    </button>
+    <div style="margin-top:14px;">
+      <div class="section-title">Classement</div>
+      <div class="leaderboard" id="leaderboard"></div>
+    </div>
+  </div>
+
+  <div id="rewardPopup" class="reward-popup" style="display:none;" onclick="closePopup()">
+    <div class="reward-box" onclick="event.stopPropagation()">
+      <div class="reward-title" id="popupTitle">Récompense !</div>
+      <div style="font-size:40px;margin:10px 0;" id="popupEmoji">🎁</div>
+      <div class="reward-desc" id="popupDesc"></div>
+      <button class="close-btn" id="popupBtn" onclick="closePopup()">Super !</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const G = {
+  gold: 0, totalGold: 0, totalClicks: 0,
+  gps: 0, prestigeCount: 0, prestigeMult: 1.0,
+  x3Active: false, x3Timer: 0, x3Mult: 3,
+  autoClickActive: false, x2Perm: false,
+  lastSave: Date.now(), _offlineGold: 0,
+  upgrades: [
+    { id:'mine', name:'Mine', icon:'⛏', level:0, baseGps:1, baseCost:10, costMult:1.15, desc:'Production de base' },
+    { id:'drill', name:'Foreuse', icon:'🔩', level:0, baseGps:5, baseCost:150, costMult:1.15, desc:'Extraction rapide' },
+    { id:'factory', name:'Usine', icon:'🏭', level:0, baseGps:25, baseCost:2000, costMult:1.15, desc:'Production massive' },
+    { id:'bank', name:'Banque', icon:'🏦', level:0, baseGps:100, baseCost:50000, costMult:1.15, desc:'Capitalise les gains' }
+  ]
+};
+const LEADERBOARD = [
+  { name: 'AurusRex', gold: '47.2T', title: 'God Miner' },
+  { name: 'GoldKing99', gold: '12.8T', title: 'Elite' },
+  { name: 'MineMax', gold: '3.1T', title: 'Elite' },
+  { name: 'Vous', gold: '0', title: 'Beginner', isYou: true },
+  { name: 'PickAxePro', gold: '0', title: 'Beginner' },
+];
+const SHOP_ITEMS = [
+  { name: 'Starter Pack', emoji: '🌟', perks: 'x5 gains 1h + 1 000 or', price: '1,99€', featured: false },
+  { name: 'Booster Pack', emoji: '⚡', perks: 'Auto-clic permanent', price: '4,99€', featured: false },
+  { name: 'Mega Pack', emoji: '💎', perks: 'x2 permanent + Mega Coffre', price: '9,99€', featured: true },
+  { name: 'OFFRE LIMITÉE -80%', emoji: '🔥', perks: 'x10 gains 24h + 10 000 or', price: '1,99€', featured: true, timer: true },
+];
+const CHESTS = {
+  free: [
+    { name: 'or x50', emoji: '🪙', rarity: 'Commun', prob: 0.60, action: () => { G.gold += getClickValue()*50; } },
+    { name: 'x2 gains 30s', emoji: '⚡', rarity: 'Rare', prob: 0.30, action: () => { activateX3(2, 30); } },
+    { name: 'or x500', emoji: '💰', rarity: 'Épique', prob: 0.09, action: () => { G.gold += getClickValue()*500; } },
+    { name: 'x5 gains 60s', emoji: '🌟', rarity: 'Légendaire', prob: 0.01, action: () => { activateX3(5, 60); } },
+  ],
+  premium: [
+    { name: 'or x200', emoji: '🪙', rarity: 'Commun', prob: 0.20, action: () => { G.gold += getClickValue()*200; } },
+    { name: 'x3 gains 60s', emoji: '⚡', rarity: 'Rare', prob: 0.45, action: () => { activateX3(3, 60); } },
+    { name: 'or x2000', emoji: '💎', rarity: 'Épique', prob: 0.30, action: () => { G.gold += getClickValue()*2000; } },
+    { name: 'x10 gains 2min', emoji: '👑', rarity: 'Légendaire', prob: 0.05, action: () => { activateX3(10, 120); } },
+  ]
+};
+const TITLES = [
+  { min: 0, label: 'Beginner' }, { min: 1000, label: 'Miner' },
+  { min: 100000, label: 'Tycoon' }, { min: 10000000, label: 'Elite' },
+  { min: 1000000000, label: 'God Miner' }
+];
+
+function fmt(n) {
+  if (n < 1e3) return Math.floor(n).toLocaleString('fr-FR');
+  if (n < 1e6) return (n/1e3).toFixed(1) + 'K';
+  if (n < 1e9) return (n/1e6).toFixed(1) + 'M';
+  if (n < 1e12) return (n/1e9).toFixed(1) + 'G';
+  return (n/1e12).toFixed(1) + 'T';
+}
+function getClickValue() {
+  let base = 1 + G.upgrades.reduce((s, u) => s + u.baseGps * u.level * 0.5, 0);
+  let mult = G.prestigeMult * (G.x3Active ? G.x3Mult : 1) * (G.x2Perm ? 2 : 1);
+  return Math.max(1, Math.floor(base * mult));
+}
+function getGPS() {
+  let base = G.upgrades.reduce((s, u) => s + u.baseGps * u.level, 0);
+  return base * G.prestigeMult * (G.x2Perm ? 2 : 1);
+}
+function getUpgradeCost(u) { return Math.ceil(u.baseCost * Math.pow(u.costMult, u.level)); }
+function getTitle() { let t = TITLES[0]; for (let x of TITLES) if (G.totalGold >= x.min) t = x; return t.label; }
+function activateX3(mult, secs) { G.x3Active = true; G.x3Mult = mult; G.x3Timer = secs; }
+
+function doMine(e) {
+  const val = getClickValue();
+  G.gold += val; G.totalGold += val; G.totalClicks++;
+  showFloat('+' + fmt(val) + ' 🪙', e.clientX, e.clientY);
+  updateUI();
+}
+function showFloat(text, x, y) {
+  const el = document.createElement('div');
+  el.className = 'float-text';
+  el.textContent = text;
+  el.style.left = (x - 20) + 'px';
+  el.style.top = (y - 30) + 'px';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 900);
+}
+function watchAd(type) {
+  if (type === 'x3') {
+    activateX3(3, 30);
+    document.getElementById('x3Btn').textContent = '⏳ x3 actif !';
+    showPopup('📺 Pub terminée !', '🎬', 'Gains x3 activés pendant 30 secondes !');
+  }
+}
+function openChest(type) {
+  if (type === 'free') {
+    showPopup('📺 Pub requise', '📦', 'Regardez une pub pour ouvrir ce coffre !', true, () => rollChest('free'));
+  } else {
+    showPopup('💳 Achat (démo)', '👑', 'Coffre Premium — 4,99€. Ouverture gratuite pour la démo !', true, () => rollChest('premium'));
+  }
+}
+function rollChest(type) {
+  const pool = CHESTS[type];
+  let r = Math.random(), cum = 0;
+  for (let item of pool) {
+    cum += item.prob;
+    if (r < cum) {
+      item.action();
+      updateUI();
+      document.getElementById('lastReward').innerHTML = '<span class="' + rarityClass(item.rarity) + '">[' + item.rarity + ']</span> ' + item.emoji + ' ' + item.name;
+      showPopup(item.emoji + ' ' + item.rarity + ' !', item.emoji, 'Vous avez obtenu : ' + item.name);
+      return;
+    }
+  }
+}
+function rarityClass(r) { return { Commun:'r-common', Rare:'r-rare', 'Épique':'r-epic', 'Légendaire':'r-leg' }[r] || 'r-common'; }
+function buyUpgrade(idx) {
+  const u = G.upgrades[idx];
+  const cost = getUpgradeCost(u);
+  if (G.gold < cost) { showPopup('💸 Pas assez d\'or', '😔', 'Il vous faut encore ' + fmt(cost - G.gold) + ' or !'); return; }
+  G.gold -= cost; u.level++;
+  updateUI(); renderUpgrades();
+  showFloat(u.icon + ' Niv.' + u.level, window.innerWidth/2, window.innerHeight/2);
+}
+function doPrestige() {
+  const needed = 1000000 * Math.pow(10, G.prestigeCount);
+  if (G.totalGold < needed) { showPopup('⚠️ Pas encore !', '✨', 'Il faut avoir gagné ' + fmt(needed) + ' or total pour prestige.'); return; }
+  G.prestigeCount++;
+  G.prestigeMult = parseFloat((1 + G.prestigeCount * 0.5).toFixed(1));
+  G.gold = 0; G.totalGold = 0; G.totalClicks = 0;
+  G.upgrades.forEach(u => u.level = 0);
+  G.x3Active = false; G.x3Timer = 0;
+  showPopup('✨ PRESTIGE !', '🌟', 'Multiplicateur permanent : x' + G.prestigeMult + ' ! Votre progression recommence.');
+  updateUI(); renderUpgrades();
+}
+
+function showPopup(title, emoji, desc, hasCta, cb) {
+  document.getElementById('popupTitle').textContent = title;
+  document.getElementById('popupEmoji').textContent = emoji;
+  document.getElementById('popupDesc').textContent = desc;
+  const btn = document.getElementById('popupBtn');
+  if (hasCta && cb) {
+    btn.textContent = 'Regarder / Confirmer';
+    btn.onclick = () => { closePopup(); cb(); };
+  } else {
+    btn.textContent = 'Super !';
+    btn.onclick = closePopup;
+  }
+  document.getElementById('rewardPopup').style.display = 'flex';
+}
+function closePopup() { document.getElementById('rewardPopup').style.display = 'none'; }
+
+function updateUI() {
+  G.gps = getGPS();
+  document.getElementById('goldDisplay').textContent = fmt(G.gold) + ' 🪙';
+  document.getElementById('gpsDisplay').textContent = fmt(G.gps) + ' or/sec';
+  document.getElementById('clickValue').textContent = '+' + fmt(getClickValue()) + ' or par clic' + (G.x3Active ? ' (x' + G.x3Mult + ' actif ⏳' + Math.ceil(G.x3Timer) + 's)' : '');
+  document.getElementById('prestigeBadge').textContent = 'Prestige x' + G.prestigeMult.toFixed(1);
+  document.getElementById('titleDisplay').textContent = getTitle();
+  document.getElementById('totalClicks').textContent = fmt(G.totalClicks);
+  document.getElementById('totalGold').textContent = fmt(G.totalGold);
+  document.getElementById('prestigeCount').textContent = G.prestigeCount;
+  const needed = 1000000 * Math.pow(10, G.prestigeCount);
+  const pct = Math.min(100, (G.totalGold / needed) * 100);
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('prestMult').textContent = 'x' + G.prestigeMult.toFixed(1);
+  document.getElementById('prestCount2').textContent = G.prestigeCount;
+  document.getElementById('prestigeCost').textContent = 'Requis : ' + fmt(needed) + ' or total';
+  document.getElementById('nextMult').textContent = '+' + (G.prestigeCount * 50 + 50) + '%';
+  renderMachineStatus();
+  renderLeaderboard();
+}
+function renderMachineStatus() {
+  const el = document.getElementById('machineStatus');
+  const active = G.upgrades.filter(u => u.level > 0);
+  if (!active.length) { el.innerHTML = '<div style="font-size:13px;color:var(--color-text-secondary);padding:4px 0;">Aucune machine — achetez des upgrades !</div>'; return; }
+  el.innerHTML = active.map(u => '<div class="lb-row" style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);margin-bottom:6px;border:0.5px solid var(--color-border-tertiary);">' + u.icon + ' <span style="flex:1;">' + u.name + '</span><span style="color:#B8860B;font-weight:500;">Niv.' + u.level + '</span><span style="color:var(--color-text-secondary);font-size:12px;margin-left:8px;">+' + fmt(u.baseGps*u.level) + '/s</span></div>').join('');
+}
+function renderUpgrades() {
+  document.getElementById('upgradeList').innerHTML = G.upgrades.map((u, i) => {
+    const cost = getUpgradeCost(u);
+    const can = G.gold >= cost;
+    return '<div class="upgrade-card"><div class="upgrade-icon">' + u.icon + '</div><div class="upgrade-info"><div class="upgrade-name">' + u.name + '</div><div class="upgrade-stat">' + u.desc + ' — +' + fmt(u.baseGps) + '/s/niv</div><div class="upgrade-lvl">Niveau ' + u.level + ' / 100</div></div><button class="buy-btn ' + (can?'can':'cant') + '" onclick="buyUpgrade(' + i + ')">' + fmt(cost) + ' 🪙</button></div>';
+  }).join('');
+}
+function renderLeaderboard() {
+  LEADERBOARD[3].gold = fmt(G.totalGold);
+  LEADERBOARD[3].title = getTitle();
+  const medals = ['🥇','🥈','🥉'];
+  document.getElementById('leaderboard').innerHTML = LEADERBOARD.map((row, i) =>
+    '<div class="lb-row" ' + (row.isYou ? 'style="background:var(--color-background-secondary);"' : '') + '><span class="lb-rank">' + (medals[i]||'#'+(i+1)) + '</span><span class="lb-name">' + row.name + (row.isYou?' 👈':'') + '</span><span class="lb-title">' + row.title + '</span><span class="lb-gold">' + row.gold + '</span></div>'
+  ).join('');
+}
+function renderShop() {
+  let t = 900;
+  document.getElementById('shopList').innerHTML = SHOP_ITEMS.map((item, i) => {
+    const timerHtml = item.timer ? '<div class="timer" id="shopTimer">⏱ Expire dans 14:59</div>' : '';
+    return '<div class="shop-card ' + (item.featured?'shop-featured':'') + '"><div class="shop-info"><div class="name">' + item.emoji + ' ' + item.name + '</div><div class="perks">' + item.perks + '</div>' + timerHtml + '</div><button class="price-btn" onclick="buyShop(' + i + ')">' + item.price + '</button></div>';
+  }).join('');
+  setInterval(() => {
+    t--; if (t < 0) t = 900;
+    const el = document.getElementById('shopTimer');
+    if (el) el.textContent = '⏱ Expire dans ' + Math.floor(t/60) + ':' + String(t%60).padStart(2,'0');
+  }, 1000);
+}
+function buyShop(i) {
+  const item = SHOP_ITEMS[i];
+  if (i === 0) { activateX3(5, 3600); G.gold += 1000; }
+  if (i === 1) { G.autoClickActive = true; }
+  if (i === 2) { G.x2Perm = true; }
+  showPopup('💳 Achat (simulé)', item.emoji, '"' + item.name + '" — ' + item.perks + '. Intégrez un vrai système de paiement pour la prod !');
+  updateUI();
+}
+function showScreen(id, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+  if (id === 'upgrades') renderUpgrades();
+  updateUI();
+}
+
+// Offline earnings simulation
+const offlineGain = Math.floor(getGPS() * 300 * Math.random() + 50);
+G._offlineGold = offlineGain;
+const banner = document.getElementById('offlineBanner');
+banner.style.display = 'flex';
+document.getElementById('offlineText').textContent = 'Tu as gagné ' + fmt(offlineGain) + ' or hors ligne !';
+document.getElementById('offlineClaimBtn').onclick = () => {
+  showPopup('⏰ Revenus hors ligne', '💰', 'Récupérez votre or ou regardez une pub pour le doubler !', true, () => {
+    G.gold += offlineGain * 2; G._offlineGold = 0; banner.style.display = 'none'; updateUI();
+  });
+};
+
+// Game loop
+setInterval(() => {
+  const gps = getGPS();
+  if (gps > 0) { G.gold += gps / 10; G.totalGold += gps / 10; }
+  if (G.x3Active) {
+    G.x3Timer -= 0.1;
+    if (G.x3Timer <= 0) { G.x3Active = false; document.getElementById('x3Btn').textContent = '📺 x3 gains pendant 30s (pub)'; }
+  }
+  if (G.autoClickActive) { const v = getClickValue(); G.gold += v * 0.5; G.totalGold += v * 0.5; }
+  updateUI();
+}, 100);
+
+renderShop();
+updateUI();
+</script>
+</body>
+</html>
