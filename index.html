@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+ <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gold Rush Idle</title>
@@ -295,11 +296,20 @@ function showFloat(text, x, y) {
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 900);
 }
-function watchAd(type) {
-  if (type === 'x3') {
-    activateX3(3, 30);
-    document.getElementById('x3Btn').textContent = '⏳ x3 actif !';
-    showPopup('📺 Pub terminée !', '🎬', 'Gains x3 activés pendant 30 secondes !');
+async function watchAd(type) {
+  try {
+    const AdController = await window.Adsgram.init({ blockId: "27916" });
+    AdController.show().then(() => {
+      if (type === 'x3') {
+        activateX3(3, 30);
+        document.getElementById('x3Btn').textContent = '⏳ x3 actif !';
+        showPopup('✅ Pub terminée !', '🎬', 'Gains x3 activés pendant 30 secondes !');
+      }
+    }).catch(() => {
+      showPopup('❌ Pub annulée', '😔', 'Regardez la pub jusqu\'à la fin !');
+    });
+  } catch(e) {
+    showPopup('❌ Erreur', '😔', 'Pub non disponible pour le moment.');
   }
 }
 function openChest(type) {
